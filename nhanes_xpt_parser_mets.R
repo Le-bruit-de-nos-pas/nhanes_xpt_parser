@@ -1197,3 +1197,238 @@ Adults %>% inner_join(Health_Insurance_20211_2022)  %>%
 
 
 # ----------
+
+# Number of Comorbidities for each comorbdity group -----------------------
+
+
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/DEMO_L.XPT", tf <- tempfile(), mode="wb")
+Demographcics_20211_2022 <- foreign::read.xport(tf)[,]
+Adults <- Demographcics_20211_2022 %>% select(SEQN, RIDAGEYR, RIAGENDR) %>% filter(RIDAGEYR>=18) %>%
+  mutate(RIAGENDR=ifelse(RIAGENDR==1,"M","F"))
+
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/BMX_L.XPT", tf <- tempfile(), mode="wb")
+Body_Measures_20211_2022 <- foreign::read.xport(tf)[,]
+Adults <- Adults %>% left_join(Body_Measures_20211_2022 %>% select(SEQN, BMXBMI))
+
+Adults <- Adults %>% mutate(BMI_GRP=ifelse(BMXBMI<25, "<25",
+                                           ifelse(BMXBMI<27,"25-27",
+                                 ifelse(BMXBMI<30,"27-30",
+                                        ifelse(BMXBMI<35,"30-35",
+                                               ifelse(BMXBMI<40,"35-40",">40"))))))
+
+
+
+Adults <- Adults %>% mutate(RIDAGEYR=ifelse(RIDAGEYR<=30, "<30",
+                                  ifelse(RIDAGEYR<=40,"<40",
+                                         ifelse(RIDAGEYR<=50,"<50",
+                                                ifelse(RIDAGEYR<=60,"<60",
+                                                       ifelse(RIDAGEYR<=70,"<70",
+                                                              ifelse(RIDAGEYR<=80,"80", NA)))))))
+
+
+
+# Comorbs
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/BPQ_L.XPT", tf <- tempfile(), mode="wb")
+Blood_Pressure_Cholesterol_20211_2022 <- foreign::read.xport(tf)[,]
+Blood_Pressure_Cholesterol_20211_2022 <- Blood_Pressure_Cholesterol_20211_2022 %>% select(SEQN,BPQ020,BPQ080) %>%
+  rename("HTN"="BPQ020", "CHOL"="BPQ080")
+Adults <- Adults %>% left_join(Blood_Pressure_Cholesterol_20211_2022)
+
+
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/KIQ_U_L.XPT", tf <- tempfile(), mode="wb")
+Kidney_Conditions_Urology_20211_2022 <- foreign::read.xport(tf)[,]
+Kidney_Conditions_Urology_20211_2022 <- Kidney_Conditions_Urology_20211_2022 %>% select(SEQN,KIQ022) %>%
+  rename("CKD"="KIQ022")
+Adults <- Adults %>% left_join(Kidney_Conditions_Urology_20211_2022)
+
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/DIQ_L.XPT", tf <- tempfile(), mode="wb")
+Diabetes_20211_2022 <- foreign::read.xport(tf)[,]
+Diabetes_20211_2022 <- Diabetes_20211_2022 %>% select(SEQN, DIQ010,DIQ160 ) %>%
+     rename("T2D"="DIQ010", "PRET2D"="DIQ160")
+Adults <- Adults %>% left_join(Diabetes_20211_2022)
+
+
+download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/MCQ_L.XPT", tf <- tempfile(), mode="wb")
+Medical_Conditions_20211_2022 <- foreign::read.xport(tf)[,]
+Medical_Conditions_20211_2022 <- Medical_Conditions_20211_2022 %>% 
+  select(SEQN, MCQ160A, MCQ160B,MCQ160C ,MCQ160E,MCQ160F ,MCQ160L ,MCQ510D ,MCQ510E ,MCQ510F ,MCQ220    ) %>%
+     rename("ARTH"="MCQ160A", "CHF"="MCQ160B", "CAD"="MCQ160C", "HEARTATTACK"="MCQ160E", 
+            "STROKE"="MCQ160F", "Liver"="MCQ160L", "ViralHepat"="MCQ510D", "AutoHepat"="MCQ510E",
+            "OtherHepat"="MCQ510F", "Cancer"="MCQ220" )
+
+Adults <- Adults %>% left_join(Medical_Conditions_20211_2022)
+
+
+
+Adults <- Adults %>% 
+  mutate(HTN=ifelse(HTN==1,1,0)) %>%
+  mutate(CHOL=ifelse(CHOL==1,1,0)) %>%
+  mutate(CKD =ifelse(CKD ==1,1,0)) %>%
+  mutate(T2D =ifelse(T2D==1|T2D==3,1,0)) %>%
+  mutate(PRET2D =ifelse(PRET2D ==1,1,0)) %>%
+  mutate(ARTH =ifelse(ARTH ==1,1,0)) %>%
+  mutate(CHF =ifelse(CHF ==1,1,0)) %>%
+  mutate(CAD =ifelse(CAD ==1,1,0)) %>%
+  mutate(HEARTATTACK  =ifelse(HEARTATTACK  ==1,1,0)) %>%
+  mutate(STROKE  =ifelse(STROKE  ==1,1,0)) %>%
+  mutate(Liver =ifelse(Liver ==1,1,0)) 
+
+Adults <- Adults %>% filter(!is.na(BMI_GRP))
+
+
+names(Adults)
+
+
+Adults <- Adults %>% select(-c(ViralHepat, AutoHepat, OtherHepat, Cancer))
+
+Adults[is.na(Adults)] <- 0
+
+# 
+#   RIDAGEYR `<25` `25-27` `27-30` `30-35` `35-40` `>40`
+# 1 <30       2.56    4.17    4.58    8.25    7.62  6.98
+# 2 <40       3.03    9.09    2.08   11.1    11.8  16.5
+# 3 <50       4.14    9.57   10.7    16.1    17.2  21.6
+# 4 <60       8.37    6.36   13.1    12.3    14.3  23
+# 5 <70       9.31   10.3     9.84   14.0    18.0  26.7
+# 6 80       13.2     9.23   16.7    14.5    16.7  28.6
+
+
+
+unique(Adults$RIDAGEYR)
+unique(Adults$BMI_GRP)
+
+
+Adults <- Adults %>%
+  mutate(
+    percent_ones = case_when(
+      RIDAGEYR == "<30" & BMI_GRP  == "<25" ~ 2.6,  
+      RIDAGEYR == "<40" & BMI_GRP  == "<25" ~ 3.0,  
+      RIDAGEYR == "<50" & BMI_GRP  == "<25" ~ 4.1,  
+      RIDAGEYR == "<60" & BMI_GRP  == "<25" ~ 8.4,  
+      RIDAGEYR == "<70" & BMI_GRP  == "<25" ~ 9.3,  
+      RIDAGEYR == "80" & BMI_GRP  == "<25" ~ 13.2,  
+       RIDAGEYR == "<30" & BMI_GRP  == "25-27" ~ 4.2,  
+      RIDAGEYR == "<40" & BMI_GRP  == "25-27" ~ 9.1,  
+      RIDAGEYR == "<50" & BMI_GRP  == "25-27" ~ 9.6,  
+      RIDAGEYR == "<60" & BMI_GRP  == "25-27" ~ 6.4,  
+      RIDAGEYR == "<70" & BMI_GRP  == "25-27" ~ 10.3,  
+      RIDAGEYR == "80" & BMI_GRP  == "25-27" ~ 9.2,  
+       RIDAGEYR == "<30" & BMI_GRP  == "27-30" ~ 4.6,  
+      RIDAGEYR == "<40" & BMI_GRP  == "27-30" ~ 2.1,  
+      RIDAGEYR == "<50" & BMI_GRP  == "27-30" ~ 10.7,  
+      RIDAGEYR == "<60" & BMI_GRP  == "27-30" ~ 13.1,  
+      RIDAGEYR == "<70" & BMI_GRP  == "27-30" ~ 9.8,  
+      RIDAGEYR == "80" & BMI_GRP  == "27-30" ~ 16.7,  
+       RIDAGEYR == "<30" & BMI_GRP  == "30-35" ~ 8.3,  
+      RIDAGEYR == "<40" & BMI_GRP  == "30-35" ~ 11.1,  
+      RIDAGEYR == "<50" & BMI_GRP  == "30-35" ~ 16.1,  
+      RIDAGEYR == "<60" & BMI_GRP  == "30-35" ~ 12.3,  
+      RIDAGEYR == "<70" & BMI_GRP  == "30-35" ~ 14.0,  
+      RIDAGEYR == "80" & BMI_GRP  == "30-35" ~ 14.5,  
+      RIDAGEYR == "<30" & BMI_GRP  == "35-40" ~ 7.6,  
+      RIDAGEYR == "<40" & BMI_GRP  == "35-40" ~ 11.8,  
+      RIDAGEYR == "<50" & BMI_GRP  == "35-40" ~ 17.2,  
+      RIDAGEYR == "<60" & BMI_GRP  == "35-40" ~ 14.3,  
+      RIDAGEYR == "<70" & BMI_GRP  == "35-40" ~ 18.0,  
+      RIDAGEYR == "80" & BMI_GRP  == "35-40" ~ 16.7,  
+        RIDAGEYR == "<30" & BMI_GRP  == ">40" ~ 7.0,  
+      RIDAGEYR == "<40" & BMI_GRP  == ">40" ~ 16.5,  
+      RIDAGEYR == "<50" & BMI_GRP  == ">40" ~ 21.6,  
+      RIDAGEYR == "<60" & BMI_GRP  == ">40" ~ 23,  
+      RIDAGEYR == "<70" & BMI_GRP  == ">40" ~ 26.7,  
+      RIDAGEYR == "80" & BMI_GRP  == ">40" ~ 14
+    ))
+
+
+temp <- data.frame(Adults %>% arrange(BMI_GRP, RIDAGEYR, SEQN) %>%
+  group_by(RIDAGEYR, BMI_GRP) %>% mutate(pop=n()) %>%
+  select(SEQN, RIDAGEYR, BMI_GRP, percent_ones, pop) %>%
+  mutate(lines= round(151*percent_ones/100) ) %>%
+  mutate(line=row_number()))
+
+
+temp %>% mutate(OSA=ifelse(line<=lines,1,0)) %>% group_by(RIDAGEYR, BMI_GRP, OSA) %>% count() %>%
+   spread(key=OSA, value=n) %>% mutate(OSA=100*`1`/(`1`+`0`)) %>%
+  select(-c(`1`, `0`)) %>%
+  spread(key=BMI_GRP,value=OSA) %>% 
+  select(RIDAGEYR  , `<25`, `25-27` ,`27-30` ,`30-35`, `35-40`, `>40`)
+
+
+
+temp %>% mutate(OSA=ifelse(line<=lines,1,0))  %>% group_by(OSA) %>% count()
+
+
+temp %>% mutate(OSA=ifelse(line<=lines,1,0)) %>%
+  inner_join(Adults %>% select(SEQN, Liver)) %>%
+  group_by(Liver, OSA) %>% count() 
+
+
+Adults <- temp %>% mutate(OSA=ifelse(line<=lines,1,0)) %>% inner_join(Adults) %>%
+  select(-c(pop, percent_ones, lines, line))
+
+Adults <- Adults %>% mutate(Total=HTN+CHOL+CKD+T2D+PRET2D+ARTH+CHF+CAD+HEARTATTACK+STROKE+Liver+OSA)
+
+
+Adults <- Adults %>% select(-c(BMI_GRP, RIDAGEYR, RIAGENDR, BMXBMI))
+
+Adults <- Adults %>% select(SEQN, Total, OSA:Liver)
+
+
+
+comorbidities <- c("OSA", "HTN", "CHOL", "CKD", "T2D", "PRET2D", "ARTH", "CHF", "CAD", "HEARTATTACK", "STROKE", "Liver")
+
+# Initialize a result dataframe
+results <- data.frame(Comorbidity = character(),
+                      Avg_Total = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each comorbidity and calculate the average Total for patients with that comorbidity
+for (comorbidity in comorbidities) {
+  # Filter patients with the comorbidity
+  patients_with_comorbidity <- Adults[Adults[[comorbidity]] == 1, ]
+  
+  # Calculate the average Total
+  avg_total <- mean(patients_with_comorbidity$Total, na.rm = TRUE)
+  
+  # Add the result to the dataframe
+  results <- rbind(results, data.frame(Comorbidity = comorbidity, Avg_Total = avg_total))
+}
+
+# View results
+print(results)
+
+   Comorbidity Avg_Total
+1          OSA  2.941456
+2          HTN  3.245051
+3         CHOL  3.085415
+4          CKD  4.429224
+5          T2D  3.667606
+6       PRET2D  3.031073
+7         ARTH  3.169500
+8          CHF  5.240816
+9          CAD  4.964968
+10 HEARTATTACK  5.023715
+11      STROKE  4.297398
+12       Liver  3.846591
+
+
+comorbidity_matrix <- matrix(0, 
+                             nrow = length(comorbidities), 
+                             ncol = length(comorbidities),
+                             dimnames = list(comorbidities, comorbidities))
+
+# Populate the matrix
+for (row_comorbidity in comorbidities) {
+  for (col_comorbidity in comorbidities) {
+    # Count patients with both comorbidities
+    count <- sum(Adults[[row_comorbidity]] == 1 & Adults[[col_comorbidity]] == 1, na.rm = TRUE)
+    # Assign the count to the matrix
+    comorbidity_matrix[row_comorbidity, col_comorbidity] <- count
+  }
+}
+
+# View the resulting matrix
+print(comorbidity_matrix)
+
+# ---------
+
