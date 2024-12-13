@@ -11,6 +11,7 @@ for (p in c("base", "survey","dplyr", "tidyverse", "data.table")) {
 }
 
 # DEMO ***************************************
+
 download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/DEMO_L.XPT", tf <- tempfile(), mode="wb")
 Demographcics_20211_2022 <- foreign::read.xport(tf)[,]
 Adults <- Demographcics_20211_2022 %>% select(SEQN, RIDAGEYR) %>% filter(RIDAGEYR>=18)
@@ -977,12 +978,13 @@ data.frame(Adults %>%
 
 # Insurances --------
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/DEMO_L.XPT", tf <- tempfile(), mode="wb")
+
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DEMO_L.XPT", tf <- tempfile(), mode="wb")
 Demographcics_20211_2022 <- foreign::read.xport(tf)[,]
 Adults <- Demographcics_20211_2022 %>% select(SEQN, RIDAGEYR, RIAGENDR) %>% filter(RIDAGEYR>=18) %>%
   mutate(RIAGENDR=ifelse(RIAGENDR==1,"M","F"))
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/BMX_L.XPT", tf <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BMX_L.XPT", tf <- tempfile(), mode="wb")
 Body_Measures_20211_2022 <- foreign::read.xport(tf)[,]
 Adults <- Adults %>% left_join(Body_Measures_20211_2022 %>% select(SEQN, BMXBMI))
 
@@ -1004,27 +1006,27 @@ Adults <- Adults %>% mutate(RIDAGEYR=ifelse(RIDAGEYR<=30, "<30",
 
 
 # Comorbs
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/BPQ_L.XPT", tf <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPQ_L.XPT", tf <- tempfile(), mode="wb")
 Blood_Pressure_Cholesterol_20211_2022 <- foreign::read.xport(tf)[,]
 Blood_Pressure_Cholesterol_20211_2022 <- Blood_Pressure_Cholesterol_20211_2022 %>% select(SEQN,BPQ020,BPQ080) %>%
   rename("HTN"="BPQ020", "CHOL"="BPQ080")
 Adults <- Adults %>% left_join(Blood_Pressure_Cholesterol_20211_2022)
 
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/KIQ_U_L.XPT", tf <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/KIQ_U_L.XPT", tf <- tempfile(), mode="wb")
 Kidney_Conditions_Urology_20211_2022 <- foreign::read.xport(tf)[,]
 Kidney_Conditions_Urology_20211_2022 <- Kidney_Conditions_Urology_20211_2022 %>% select(SEQN,KIQ022) %>%
   rename("CKD"="KIQ022")
 Adults <- Adults %>% left_join(Kidney_Conditions_Urology_20211_2022)
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/DIQ_L.XPT", tf <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DIQ_L.XPT", tf <- tempfile(), mode="wb")
 Diabetes_20211_2022 <- foreign::read.xport(tf)[,]
 Diabetes_20211_2022 <- Diabetes_20211_2022 %>% select(SEQN, DIQ010,DIQ160 ) %>%
      rename("T2D"="DIQ010", "PRET2D"="DIQ160")
 Adults <- Adults %>% left_join(Diabetes_20211_2022)
 
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/MCQ_L.XPT", tf <- tempfile(), mode="wb")
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/MCQ_L.XPT", tf <- tempfile(), mode="wb")
 Medical_Conditions_20211_2022 <- foreign::read.xport(tf)[,]
 Medical_Conditions_20211_2022 <- Medical_Conditions_20211_2022 %>% 
   select(SEQN, MCQ160A, MCQ160B,MCQ160C ,MCQ160E,MCQ160F ,MCQ160L ,MCQ510D ,MCQ510E ,MCQ510F ,MCQ220    ) %>%
@@ -1168,7 +1170,9 @@ Adults %>% filter(BMI_GRP!="25-27"&BMI_GRP!="<25") %>%
 
 Adults <- Adults %>% select(SEQN, BMI_GRP, Total, T2D)
 
-download.file("https://wwwn.cdc.gov/Nchs/Nhanes/2021-2022/HIQ_L.XPT", tf <- tempfile(), mode="wb")
+
+
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/HIQ_L.XPT", tf <- tempfile(), mode="wb")
 Health_Insurance_20211_2022 <- foreign::read.xport(tf)[,]
 
 Adults %>% inner_join(Health_Insurance_20211_2022)  %>%
